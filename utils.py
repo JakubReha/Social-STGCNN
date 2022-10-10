@@ -39,8 +39,8 @@ def seq_to_graph(seq_,seq_rel,norm_lap_matr = True):
         step_ = seq_[:,:,s]
         step_rel = seq_rel[:,:,s]
         for h in range(len(step_)): 
-            V[s,h,:] = step_rel[h]
-            A[s,h,h] = 1
+            V[s, h, :] = step_rel[h]
+            A[s, h, h] = 1
             for k in range(h+1,len(step_)):
                 l2_norm = anorm(step_rel[h],step_rel[k])
                 A[s,h,k] = l2_norm
@@ -87,7 +87,7 @@ class TrajectoryDataset(Dataset):
     """Dataloder for the Trajectory datasets"""
     def __init__(
         self, data_dir, obs_len=8, pred_len=8, skip=1, threshold=0.002,
-        min_ped=1, delim='\t',norm_lap_matr = True):
+        min_ped=1, delim='\t', norm_lap_matr = True):
         """
         Args:
         - data_dir: Directory containing dataset files in the format
@@ -111,7 +111,8 @@ class TrajectoryDataset(Dataset):
         self.delim = delim
         self.norm_lap_matr = norm_lap_matr
 
-        all_files = os.listdir(self.data_dir)
+        #TODO: remove this limitation
+        all_files = os.listdir(self.data_dir)[1:2]
         all_files = [os.path.join(self.data_dir, _path) for _path in all_files]
         num_peds_in_seq = []
         seq_list = []
@@ -203,10 +204,10 @@ class TrajectoryDataset(Dataset):
 
             start, end = self.seq_start_end[ss]
 
-            v_,a_ = seq_to_graph(self.obs_traj[start:end,:],self.obs_traj_rel[start:end, :],self.norm_lap_matr)
+            v_, a_ = seq_to_graph(self.obs_traj[start:end, :], self.obs_traj_rel[start:end, :],self.norm_lap_matr)
             self.v_obs.append(v_.clone())
             self.A_obs.append(a_.clone())
-            v_,a_=seq_to_graph(self.pred_traj[start:end,:],self.pred_traj_rel[start:end, :],self.norm_lap_matr)
+            v_, a_ = seq_to_graph(self.pred_traj[start:end, :], self.pred_traj_rel[start:end, :],self.norm_lap_matr)
             self.v_pred.append(v_.clone())
             self.A_pred.append(a_.clone())
         pbar.close()

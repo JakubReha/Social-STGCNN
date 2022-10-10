@@ -14,6 +14,8 @@ from metrics import *
 from model import social_stgcnn
 import copy
 
+device = "cpu"
+
 def test(KSTEPS=20):
     global loader_test,model
     model.eval()
@@ -24,7 +26,7 @@ def test(KSTEPS=20):
     for batch in loader_test: 
         step+=1
         #Get data
-        batch = [tensor.cuda() for tensor in batch]
+        batch = [tensor.to(device) for tensor in batch]
         obs_traj, pred_traj_gt, obs_traj_rel, pred_traj_gt_rel, non_linear_ped,\
          loss_mask,V_obs,A_obs,V_tr,A_tr = batch
 
@@ -42,7 +44,7 @@ def test(KSTEPS=20):
         # torch.Size([12, 2, 5])
         V_pred = V_pred.permute(0,2,3,1)
         # torch.Size([1, 12, 2, 5])>>seq,node,feat
-        # V_pred= torch.rand_like(V_tr).cuda()
+        # V_pred= torch.rand_like(V_tr).to(device)
 
 
         V_tr = V_tr.squeeze()
@@ -59,7 +61,7 @@ def test(KSTEPS=20):
         sy = torch.exp(V_pred[:,:,3]) #sy
         corr = torch.tanh(V_pred[:,:,4]) #corr
         
-        cov = torch.zeros(V_pred.shape[0],V_pred.shape[1],2,2).cuda()
+        cov = torch.zeros(V_pred.shape[0],V_pred.shape[1],2,2).to(device)
         cov[:,:,0,0]= sx*sx
         cov[:,:,0,1]= corr*sx*sy
         cov[:,:,1,0]= corr*sx*sy
@@ -181,19 +183,22 @@ for feta in range(len(paths)):
         #Defining the model 
         model = social_stgcnn(n_stgcnn =args.n_stgcnn,n_txpcnn=args.n_txpcnn,
         output_feat=args.output_size,seq_len=args.obs_seq_len,
-        kernel_size=args.kernel_size,pred_seq_len=args.pred_seq_len).cuda()
-        model.load_state_dict(torch.load(model_path))
+        kernel_size=args.kernel_size,pred_seq_len=args.pred_seq_len).to(device)
+        if device == "cpu":
+            model.load_state_dict(torch.load(model_path, map_location='cpu'))
+        else:
+            model.load_state_dict(torch.load(model_path))
 
 
-        ade_ =999999
-        fde_ =999999
+        ade_ = 999999
+        fde_ = 999999
         print("Testing ....")
-        ad,fd,raw_data_dic_= test()
-        ade_= min(ade_,ad)
-        fde_ =min(fde_,fd)
+        ad, fd, raw_data_dic_ = test()
+        ade_ = min(ade_, ad)
+        fde_ = min(fde_, fd)
         ade_ls.append(ade_)
         fde_ls.append(fde_)
-        print("ADE:",ade_," FDE:",fde_)
+        print("ADE:", ade_, " FDE:", fde_)
 
 
 
